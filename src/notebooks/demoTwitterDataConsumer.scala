@@ -8,10 +8,10 @@ import org.apache.spark.sql.functions._
 
 /* Preparing connection for Event Hub  */
 
-val namespaceName = namespaceName
-val eventHubName = eventHubName
-val sasKeyName = sasKeyName
-val sasKey = sasKey
+val namespaceName = dbutils.widgets.get("varNamespaceName")
+val eventHubName = dbutils.widgets.get("varEventHubName")
+val sasKeyName = dbutils.widgets.get("varSasKeyName")
+val sasKey = dbutils.widgets.get("varSasKey")
 
 val connStr = new com.microsoft.azure.eventhubs.ConnectionStringBuilder()
             .setNamespaceName(namespaceName)
