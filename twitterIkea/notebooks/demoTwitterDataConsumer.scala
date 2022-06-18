@@ -34,6 +34,7 @@ val messages =
   .withColumn("text", $"body".cast(StringType))
   .select("id", "created_at", "text")
 
+/* additional logic to get any new or existing product mention */
 val productMessage = messages.withColumn("product", 
       expr("case when lower(text) like '%furniture%' then 'Furniture'" +
       "when lower(text) like '%food%' then 'Food'"+
@@ -47,6 +48,5 @@ val productMessage = messages.withColumn("product",
 dbutils.fs.rm("/user/root/Checkpoints2/", true)
 
 /* Writing output to parquet file */
-
 productMessage.repartition(2).writeStream.outputMode("append").partitionBy("tweet_date","product").format("parquet").option("path","/FileStore/tables/ikea_tweet/").option("checkpointLocation", "/user/root/Checkpoints2").start()
 
