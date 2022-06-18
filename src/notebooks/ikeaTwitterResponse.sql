@@ -1,8 +1,6 @@
 -- Databricks notebook source
 /* creating external hive table on parquet file from dbfs path */
 
-drop table if exists ikea_twitter_response;
-
 create external table if not exists ikea_twitter_response
 (id string, created_at string, text string)
   PARTITIONED BY (tweet_date string, product string)
