@@ -6,11 +6,12 @@ import com.microsoft.azure.eventhubs._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
 
-// Build connection string with the above information
-val namespaceName = "twitterStream"
-val eventHubName = "streamdatademo"
-val sasKeyName = "twitter_stream_data_eh_sap"
-val sasKey = "kJ5Wc0y571rt8vW1NybM0ohUOQQDJsUGtAMYSWmUFGs="
+/* Preparing connection for Event Hub  */
+
+val namespaceName = namespaceName
+val eventHubName = eventHubName
+val sasKeyName = sasKeyName
+val sasKey = sasKey
 
 val connStr = new com.microsoft.azure.eventhubs.ConnectionStringBuilder()
             .setNamespaceName(namespaceName)
@@ -22,8 +23,10 @@ val customEventhubParameters =
   EventHubsConf(connStr.toString())
   .setMaxEventsPerTrigger(5)
 
+/* Reading stream from Event Hub */
 val incomingStream = spark.readStream.format("eventhubs").options(customEventhubParameters.toMap).load()
 
+/* getting event messages and preparing output*/
 val messages =
   incomingStream
   .withColumn("id", $"offset".cast(StringType))
@@ -41,14 +44,9 @@ val productMessage = messages.withColumn("product",
   .withColumn("tweet_date",expr("subString(created_at,1,10)"))
 .select("id", "created_at", "text", "tweet_date","product")
 
-//productMessage.writeStream.outputMode("append").format("console").option("truncate", false).start().awaitTermination()
 dbutils.fs.rm("/user/root/Checkpoints2/", true)
+
+/* Writing output to parquet file */
+
 productMessage.repartition(2).writeStream.outputMode("append").partitionBy("tweet_date","product").format("parquet").option("path","/FileStore/tables/ikea_tweet/").option("checkpointLocation", "/user/root/Checkpoints2").start()
 
-
-
-// COMMAND ----------
-
-
-    //dbutils.fs.rm("/FileStore/tables/ikea_tweet", true)
-    
