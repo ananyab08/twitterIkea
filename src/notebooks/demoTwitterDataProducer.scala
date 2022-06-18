@@ -14,10 +14,17 @@ import twitter4j.conf.ConfigurationBuilder
 
 /* Preparing connection for Event Hub  */
 
-val namespaceName = namespaceName
-val eventHubName = eventHubName
-val sasKeyName = sasKeyName
-val sasKey = sasKey
+
+val namespaceName = dbutils.widgets.get("varNamespaceName")
+val eventHubName = dbutils.widgets.get("varEventHubName")
+val sasKeyName = dbutils.widgets.get("varSasKeyName")
+val sasKey = dbutils.widgets.get("varSasKey")
+
+println ("variable1 "+namespaceName)
+println ("variable2 "+eventHubName)
+println ("variable3 "+sasKeyName)
+println ("variable4 "+sasKey)
+
 
 val connStr = new ConnectionStringBuilder()
             .setNamespaceName(namespaceName)
@@ -39,10 +46,10 @@ def sendEvent(message: String, delay: Long) = {
 }
 
 /* Preparing connection for twitter dev account */
-val twitterConsumerKey = twitterConsumerKey
-val twitterConsumerSecret = twitterConsumerSecret
-val twitterOauthAccessToken = twitterOauthAccessToken
-val twitterOauthTokenSecret = twitterOauthTokenSecret
+val twitterConsumerKey = dbutils.widgets.get("varTwitterConsumerKey")
+val twitterConsumerSecret = dbutils.widgets.get("varTwitterConsumerSecret")
+val twitterOauthAccessToken = dbutils.widgets.get("varTwitterOauthAccessToken")
+val twitterOauthTokenSecret = dbutils.widgets.get("varTwitterOauthTokenSecret")
 
 val cb = new ConfigurationBuilder()
     cb.setDebugEnabled(true)
