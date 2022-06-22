@@ -26,16 +26,26 @@ val customEventhubParameters =
 /* Reading stream from Event Hub */
 val incomingStream = spark.readStream.format("eventhubs").options(customEventhubParameters.toMap).load()
 
+incomingStream.printSchema()
+
+//incomingStream.writeStream.outputMode("append").format("console").option("truncate", false).start().awaitTermination()
 /* getting event messages and preparing output*/
 val messages =
   incomingStream
   .withColumn("id", $"offset".cast(StringType))
   .withColumn("created_at", $"enqueuedTime".cast(StringType))
-  .withColumn("text", $"body".cast(StringType))
-  .select("id", "created_at", "text")
+  .withColumn("fullText", $"body".cast(StringType))
+  .select("id", "created_at", "fullText")
+
+//messages.writeStream.outputMode("append").format("console").option("truncate", false).start().awaitTermination()
+
+val updMessage = messages.withColumn("text", split($"fullText","::ab").getItem(0))
+.withColumn("lang", split($"fullText","::ab").getItem(1))
+.withColumn("location", split($"fullText","::ab").getItem(2))
 
 /* additional logic to get any new or existing product mention */
-val productMessage = messages.withColumn("product", 
+
+val productMessage = updMessage.withColumn("product", 
       expr("case when lower(text) like '%furniture%' then 'Furniture'" +
       "when lower(text) like '%food%' then 'Food'"+
       "when lower(text) like '%kitchen%' or lower(text) like '%dining%' then 'Kitchen & Dining'"+
@@ -43,10 +53,11 @@ val productMessage = messages.withColumn("product",
       "when lower(text) like '%bed%' or lower(text) like '%bathroom%' then 'Bed & Bath Room'"+
       "else 'others' end"))
   .withColumn("tweet_date",expr("subString(created_at,1,10)"))
-  .select("id", "created_at", "text", "tweet_date","product")
+  .select("id", "created_at", "text", "lang","location","tweet_date","product")
 
 dbutils.fs.rm("/user/root/Checkpoints2/", true)
 
 /* Writing output to parquet file at dbfs path */
-productMessage.repartition(2).writeStream.outputMode("append").partitionBy("tweet_date","product").format("parquet").option("path","/FileStore/tables/ikea_tweet/").option("checkpointLocation", "/user/root/Checkpoints2").start()
+productMessage.repartition(2).writeStream.outputMode("append").partitionBy("tweet_date","product").format("parquet").option("path","/FileStore/tables/ikea_twitter_response/").option("checkpointLocation", "/user/root/Checkpoints2").start()
 
+//productMessage.writeStream.outputMode("append").format("console").option("truncate", false).start().awaitTermination()
