@@ -11,6 +11,8 @@ import twitter4j._
 import twitter4j.TwitterFactory
 import twitter4j.Twitter
 import twitter4j.conf.ConfigurationBuilder
+import scala.collection.mutable.HashMap
+
 
 /* Preparing connection for Event Hub  */
 
@@ -19,12 +21,6 @@ val namespaceName = dbutils.widgets.get("varNamespaceName")
 val eventHubName = dbutils.widgets.get("varEventHubName")
 val sasKeyName = dbutils.widgets.get("varSasKeyName")
 val sasKey = dbutils.widgets.get("varSasKey")
-
-println ("variable1 "+namespaceName)
-println ("variable2 "+eventHubName)
-println ("variable3 "+sasKeyName)
-println ("variable4 "+sasKey)
-
 
 val connStr = new ConnectionStringBuilder()
             .setNamespaceName(namespaceName)
@@ -42,7 +38,7 @@ def sendEvent(message: String, delay: Long) = {
     sleep(delay)
     val messageData = EventData.create(message.getBytes("UTF-8"))
     eventHubClient.get().send(messageData)
-    System.out.println("Sent event: " + message + "\n")
+   System.out.println("Sent event: " + message + "\n")
 }
 
 /* Preparing connection for twitter dev account */
@@ -64,7 +60,7 @@ val twitter = twitterFactory.getInstance()
 /* Getting tweets with keyword "IKEA" and sending them to the Event Hub in realtime */
 val query = new Query("IKEA")
     query.setCount(100)
-    query.lang("en")
+    //query.lang("en")
 var finished = false
 while (!finished) {
     val result = twitter.search(query)
@@ -72,9 +68,17 @@ while (!finished) {
     var lowestStatusId = Long.MaxValue
     for(status <- statuses.asScala) {
        if(!status.isRetweet()){
-         sendEvent(status.getText(), 0)
-       }
+         
+         val text = status.getText()
+         val lang = status.getLang()
+         val location = status.getUser().getLocation()
+         var tweetStr = text+"::ab"+lang+"::ab"+location
+         
+         sendEvent(tweetStr, 0)
+    }
+         
     lowestStatusId = Math.min(status.getId(), lowestStatusId)
+   
    }
    query.setMaxId(lowestStatusId - 1)
   } 
